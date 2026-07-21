@@ -1,0 +1,16 @@
+.git
+.agents
+.codex
+.venv
+node_modules
+data
+outputs
+work
+worker
+workers
+Distributed-ML-Training-main/**/.venv
+Distributed-ML-Training-main/**/data
+Distributed-ML-Training-main/**/logs
+Distributed-ML-Training-main/**/cluster.db
+*.zip
+.env
