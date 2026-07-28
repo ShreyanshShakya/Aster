@@ -2,8 +2,30 @@
 set -euxo pipefail
 
 dnf update -y
-dnf install -y docker git
+dnf install -y docker git curl
 systemctl enable --now docker
+
+# Install Docker Compose v2 globally. The package path is tried first; the
+# official CLI plugin binary is the fallback for Amazon Linux repositories
+# that do not publish docker-compose-plugin.
+if ! dnf install -y docker-compose-plugin; then
+  install -d -m 0755 /usr/local/lib/docker/cli-plugins
+  curl -fsSL https://github.com/docker/compose/releases/download/v5.1.2/docker-compose-linux-x86_64 \
+    -o /usr/local/lib/docker/cli-plugins/docker-compose
+  chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose
+fi
+docker compose version
+
+# Compose delegates image builds to Buildx. Install a version that meets the
+# platform's minimum build requirement, with the Amazon Linux package preferred
+# and the official CLI plugin used as a fallback.
+if ! dnf install -y docker-buildx-plugin; then
+  install -d -m 0755 /usr/local/lib/docker/cli-plugins
+  curl -fsSL https://github.com/docker/buildx/releases/download/v0.17.1/buildx-v0.17.1.linux-amd64 \
+    -o /usr/local/lib/docker/cli-plugins/docker-buildx
+  chmod 0755 /usr/local/lib/docker/cli-plugins/docker-buildx
+fi
+docker buildx version
 
 # SSM Agent is included with Amazon Linux 2023. No inbound SSH rule is created.
 # Application deployment is deliberately a separate, reviewed step after the

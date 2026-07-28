@@ -23,6 +23,12 @@ terraform apply
 
 Copy the `ssm_start_session` output and run it to access the host without SSH. Once connected, clone or transfer this repository into `/opt/aster`, configure the platform environment file, and start the base Compose stack with the DMLF extension.
 
+The bootstrap installs the Docker Compose v2 plugin. Use the following single-line command on the EC2 host (do not copy PowerShell backticks or multi-line escaping into a Bash session):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dmlf.yml up --build -d
+```
+
 ## Destroy
 
 Export the test evidence first. Then run:

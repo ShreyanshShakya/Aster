@@ -88,7 +88,10 @@ services:
   frontend:
     build: ./frontend
     environment:
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+      # The browser calls this same-origin route. Next.js forwards it across the
+      # internal Docker network to the API, so an EC2 visitor never tries to
+      # contact localhost:8000 on their own computer.
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api}
     ports:
       - "3001:3000"
     volumes:

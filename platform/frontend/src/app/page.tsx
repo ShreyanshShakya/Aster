@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
-const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
 const sessionKey = "aster.access-token";
 
 type User = { id: string; email: string; display_name: string };
@@ -74,7 +74,10 @@ export function AsterPlatform({ activeView = "research" }: { activeView?: Worksp
   useEffect(() => { loadWorkspace().catch((error) => { window.sessionStorage.removeItem(sessionKey); setToken(""); setMessage(error instanceof Error ? error.message : "Your session has expired."); }); }, [loadWorkspace]);
   useEffect(() => {
     if (!token) return;
-    const socket = new WebSocket(`${apiBase.replace(/^http/, "ws")}/ws/jobs?token=${encodeURIComponent(token)}`);
+    const socketBase = apiBase.startsWith("http")
+      ? apiBase.replace(/^http/, "ws")
+      : `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}${apiBase}`;
+    const socket = new WebSocket(`${socketBase}/ws/jobs?token=${encodeURIComponent(token)}`);
     socket.onopen = () => setConnected(true); socket.onclose = () => setConnected(false);
     socket.onmessage = () => { loadWorkspace().catch(() => setMessage("Job changed, but the latest list could not be loaded.")); };
     return () => socket.close();
