@@ -1,0 +1,67 @@
+# Optional DMLF extension. Start it together with the base platform using:
+# docker compose -f docker-compose.yml -f docker-compose.dmlf.yml up --build
+services:
+  backend:
+    environment:
+      DMLF_ADAPTER_ENABLED: "true"
+      DMLF_BRIDGE_ENDPOINT: http://dmlf-bridge:8002
+      DMLF_REQUESTED_NODES: "2"
+
+  dmlf-manager:
+    build:
+      context: ../Distributed-ML-Training-main/Distributed-ML-Training-main
+    working_dir: /state
+    command: python -m dmlf.manager.cluster_manager --port 50051
+    ports:
+      - "50051:50051"
+    volumes:
+      - dmlf-state:/state
+
+  dmlf-bridge:
+    build:
+      context: ../Distributed-ML-Training-main/Distributed-ML-Training-main
+    working_dir: /state
+    command: python -m dmlf.bridge
+    environment:
+      DMLF_MANAGER_ADDR: dmlf-manager:50051
+      DMLF_CLUSTER_DB: /state/cluster.db
+      DMLF_CLUSTER_LOG: /state/logs/cluster.log
+      DMLF_TRAINING_SCRIPT: train.py
+      DMLF_BRIDGE_HOST: 0.0.0.0
+      DMLF_BRIDGE_PORT: "8002"
+    ports:
+      - "8002:8002"
+    volumes:
+      - dmlf-state:/state
+    depends_on:
+      - dmlf-manager
+
+  dmlf-agent-1:
+    build:
+      context: ../Distributed-ML-Training-main/Distributed-ML-Training-main
+    command: >-
+      sh -c 'while true; do python -m dmlf.agent.agent --manager dmlf-manager:50051; sleep 3; done'
+    environment:
+      DMLF_DATA_DIR: /app/data
+      DMLF_SHARED_DATA: "true"
+    volumes:
+      - dmlf-mnist-data:/app/data
+    depends_on:
+      - dmlf-manager
+
+  dmlf-agent-2:
+    build:
+      context: ../Distributed-ML-Training-main/Distributed-ML-Training-main
+    command: >-
+      sh -c 'while true; do python -m dmlf.agent.agent --manager dmlf-manager:50051; sleep 3; done'
+    environment:
+      DMLF_DATA_DIR: /app/data
+      DMLF_SHARED_DATA: "true"
+    volumes:
+      - dmlf-mnist-data:/app/data
+    depends_on:
+      - dmlf-manager
+
+volumes:
+  dmlf-state:
+  dmlf-mnist-data:

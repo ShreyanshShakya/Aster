@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euxo pipefail
+
+dnf update -y
+dnf install -y docker git
+systemctl enable --now docker
+
+# SSM Agent is included with Amazon Linux 2023. No inbound SSH rule is created.
+# Application deployment is deliberately a separate, reviewed step after the
+# instance is reachable through Session Manager.
+mkdir -p /opt/aster
+chown ec2-user:ec2-user /opt/aster
