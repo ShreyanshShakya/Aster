@@ -71,7 +71,7 @@ resource "aws_security_group" "aster" {
   vpc_id      = aws_vpc.test.id
 
   ingress {
-    description = "Aster dashboard from the operator's current public IP"
+    description = "Aster dashboard from operator current public IP"
     from_port   = 3001
     to_port     = 3001
     protocol    = "tcp"
