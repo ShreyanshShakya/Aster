@@ -25,30 +25,97 @@ Aster is deliberately scoped as a hackathon/demo implementation. It uses determi
 
 ## Architecture
 
+Aster has two related execution surfaces in this repository: the lightweight Node.js research-demo orchestrator and the fuller FastAPI platform stack. Both preserve a bounded research-plan contract; the DMLF integration delegates actual distributed training to the separate cluster manager and node agents.
+
+### 1. Research workflow and agent responsibilities
+
 ```mermaid
-flowchart LR
-  U["Researcher\nquestion + budget"] --> UI["Web dashboard\nplan review + live timeline"]
-  UI --> ORCH["Research orchestrator\npersistent run manifest"]
-
-  ORCH --> LIT["Literature agent\npaper metadata + abstracts"]
-  LIT --> HYP["Hypothesis agent\nfalsifiable success criterion"]
-  HYP --> PLAN["Experiment planner + critic\nbounded allowlisted specs"]
-  PLAN --> SCHED["Capability-aware scheduler\nCPU / GPU / DMLF"]
-
-  SCHED --> SIM["Local simulated workers\no-key fallback"]
-  SCHED --> BRIDGE["DMLF async bridge\nPOST job -> job ID -> polling"]
-  BRIDGE --> MGR["DMLF cluster manager"]
-  MGR --> N1["Node agent A\nPyTorch DDP rank 0"]
-  MGR --> N2["Node agent B\nPyTorch DDP rank 1"]
-
-  SIM --> ANALYZE["Results analyst\nranking + repeated-seed stats"]
-  N1 --> ANALYZE
-  N2 --> ANALYZE
-  ANALYZE --> REPORT["Markdown report + manifest\nevidence labels + limitations"]
-  REPORT --> UI
+flowchart TD
+  R["Researcher"] --> UI["Research dashboard"]
+  UI --> API["Node.js HTTP API"]
+  API --> O["ResearchOrchestrator"]
+  O --> L["Literature agent"]
+  L --> PS["Paper sources\nSemantic Scholar / OpenAlex / fallback"]
+  L --> H["Hypothesis agent"]
+  H --> P["Experiment planner"]
+  P --> C["Plan critic\nbaseline + metric + controls"]
+  C --> G{"Human review / approval"}
+  G -->|Approved plan| S["Capability-aware scheduler"]
+  S --> SW["Simulated workers\ndeterministic offline demo"]
+  S --> RW["Remote worker adapter"]
+  S --> DW["DMLF worker adapter"]
+  SW --> A["Results analysis\nranking + repeated-seed statistics"]
+  RW --> A
+  DW --> A
+  A --> REP["Markdown report + run manifest"]
+  REP --> ST["Persistent run store"]
+  ST --> UI
 ```
 
-The LLM-facing agents never receive shell access or credentials. They produce validated research-plan data; the scheduler and DMLF bridge execute only bounded experiment specifications.
+The default Node.js demo uses deterministic local agents and simulated workers when no OpenAI credentials are configured. With `OPENAI_API_KEY`, the literature, hypothesis and report synthesis calls use the Responses API. Paper retrieval is optional and can use Semantic Scholar with OpenAlex fallback. The plan critic emits caveats and marks that human approval is required; model-generated text does not directly execute commands.
+
+### 2. Distributed execution boundary
+
+```mermaid
+sequenceDiagram
+  participant O as Aster orchestrator / scheduler
+  participant B as DMLF HTTP bridge
+  participant M as DMLF Cluster Manager
+  participant DB as DMLF cluster.db
+  participant N as DMLF node agents
+  participant T as torchrun / PyTorch DDP
+  O->>B: POST /execute (bounded experiment)
+  B->>M: SubmitJob (gRPC)
+  M->>DB: Persist job + allocation state
+  M->>N: LaunchJob command stream
+  N->>T: Launch distributed training
+  T-->>N: Structured training result
+  N-->>M: Job status + logs
+  B->>DB: Poll durable job state / result log
+  B-->>O: jobId + progress / terminal metrics
+```
+
+Aster's bridge adapts the DMLF job interface; it does not replace DMLF scheduling or invent worker capacity. DMLF remains responsible for node allocation, launch, retry handling and training execution. The research application polls the asynchronous job contract and labels synthetic smoke-test results separately from benchmark evidence.
+
+### 3. Platform service architecture
+
+The optional platform stack is a separate service-oriented backend, not the same process as the Node.js demo API.
+
+```mermaid
+flowchart TB
+  B["Browser"] --> FE["Next.js frontend"]
+  FE -->|"REST + authenticated WebSocket"| API["FastAPI backend"]
+  API --> PG[("PostgreSQL\nauthoritative records")]
+  API --> REDIS[("Redis\nqueue + live events")]
+  API --> OBJ[("MinIO / storage adapter\nreports + artifacts")]
+  API --> SCH["Scheduler service"]
+  SCH --> REDIS
+  REDIS --> WK["Worker service"]
+  WK --> PG
+  WK --> OBJ
+  WK -->|"optional DMLF executor"| BR["DMLF HTTP bridge"]
+  BR --> DM["DMLF manager + agents"]
+```
+
+| Service | Responsibility |
+|---|---|
+| Next.js frontend | Research, projects, jobs, reports and worker views |
+| FastAPI backend | Authentication, ownership checks, research/job APIs and artifact access |
+| PostgreSQL | Durable users, projects, runs, jobs, events and artifact metadata |
+| Redis | Work queue and live-event channels |
+| Scheduler / worker | Publish queued jobs and execute allowlisted job types |
+| Storage adapter | Persist report and artifact bodies (MinIO or configured local fallback) |
+| DMLF bridge | Optional hand-off to the existing distributed training cluster |
+
+### 4. Evidence and execution modes
+
+| Mode | What it demonstrates | Evidence interpretation |
+|---|---|---|
+| Deterministic local agents + simulated workers | End-to-end research orchestration without credentials | Simulated metrics |
+| OpenAI-backed synthesis | Model-assisted literature, hypothesis and report text | Generated reasoning; validate against primary sources |
+| Remote worker | Asynchronous external execution through a bounded HTTP contract | Depends on worker-reported metrics and provenance |
+| DMLF + PyTorch DDP | Actual distributed training through registered nodes | Real execution; synthetic data is not benchmark evidence |
+
 
 ## Demo in 60 seconds
 
