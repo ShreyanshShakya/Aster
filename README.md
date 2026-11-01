@@ -1,10 +1,27 @@
-# Distributed AI Research Scientist
+# Aster — Distributed AI Research Scientist
 
-An autonomous, auditable research loop for machine-learning experiments. It turns a question into a literature brief, a testable hypothesis, an experiment plan, parallel jobs on heterogeneous workers, a result analysis, and a Markdown report.
+> An auditable, human-approved AI research workflow that transforms a research question into a literature brief, testable hypothesis, bounded experiment plan, distributed execution, result analysis, and a reproducible Markdown report.
 
-This repository is deliberately scoped for a hackathon demo. It uses deterministic local agents by default, so the complete flow is runnable with no model credentials. Set `OPENAI_API_KEY` to switch the literature, hypothesis, and report agents to the OpenAI Responses API.
+<p align="left">
+  <img src="https://img.shields.io/badge/AI-Research%20Orchestration-6C5CE7" alt="AI research orchestration"/>
+  <img src="https://img.shields.io/badge/Agents-Multi--Agent-0A7EA4" alt="Multi-agent"/>
+  <img src="https://img.shields.io/badge/Execution-DMLF-3776AB" alt="DMLF"/>
+  <img src="https://img.shields.io/badge/Runtime-Local%20First-2E8B57" alt="Local first"/>
+</p>
 
-> **Pitch:** An auditable, human-approved AI research loop that plans ML experiments, runs them on distributed compute, and turns results into reproducible reports.
+Aster is deliberately scoped as a hackathon/demo implementation. It uses deterministic local agents by default, so the end-to-end flow can be explored without model credentials. Set `OPENAI_API_KEY` to switch the literature, hypothesis, and report agents to the OpenAI Responses API.
+
+## Project at a glance
+
+| Stage | Responsibility |
+|---|---|
+| Research intake | Capture question and experiment budget |
+| Literature | Gather paper metadata and abstracts |
+| Hypothesis | Produce a testable research hypothesis |
+| Planning | Create bounded experiment specifications and critique the plan |
+| Execution | Schedule local simulated workers or connect to DMLF |
+| Analysis | Compare experiment results and rank outcomes |
+| Reporting | Generate a Markdown report with evidence labels and limitations |
 
 ## Architecture
 
