@@ -254,7 +254,7 @@ When retrieval is enabled, use **Find papers for this question** in the dashboar
 
 For a reliable short recording, use the **DMLF synthetic two-node** path: it proves distributed execution without depending on dataset download. Select **DMLF synthetic - execution smoke test**, set one experiment, one epoch, and one seed repetition. The report will correctly preserve the synthetic-data limitation.
 
-See the concise [demo script](docs/demo-script.md) and [submission checklist](docs/submission-checklist.md) before recording or submitting.
+For setup and recording steps, see the [two-machine demo guide](docs/two-machine-demo.md) and [Docker Compose guide](docs/docker-compose.md).
 
 
 ## Real DMLF distributed execution
